@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data;
+using System.Data.Common;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -28,7 +31,7 @@ namespace TestOrmLite
 
     public class IntegrationTest
     {
-        public IntegrationTest() : this(Dialect.Sqlite)
+        public IntegrationTest() : this(Dialect.VistaDb)
         {
             LogManager.LogFactory = new ConsoleLogFactory(debugEnabled: true);
         }
@@ -122,21 +125,21 @@ namespace TestOrmLite
                     return Init(Config.FirebirdDb, FirebirdDialect.Provider);
                 case Dialect.Oracle:
                     return Init(Config.OracleDb, OracleDialect.Provider);
-                    //case Dialect.Oracle:
-                    //    return Init(Config.OracleDb, OracleDialect.Provider);
-                    //case Dialect.VistaDb:
-                    //    VistaDbDialect.Provider.UseLibraryFromGac = true;
-                    //    var connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["myVDBConnection"];
-                    //    var factory = DbProviderFactories.GetFactory(connectionString.ProviderName);
-                    //    using (var db = factory.CreateConnection())
-                    //    using (var cmd = db.CreateCommand())
-                    //    {
-                    //        var tmpFile = Path.GetTempPath().CombineWith(Guid.NewGuid().ToString("n") + ".vb5");
-                    //        cmd.CommandText = @"CREATE DATABASE '|DataDirectory|{0}', PAGE SIZE 4, LCID 1033, CASE SENSITIVE FALSE;"
-                    //            .Fmt(tmpFile);
-                    //        cmd.ExecuteNonQuery();
-                    //        return Init("Data Source={0};".Fmt(tmpFile), VistaDbDialect.Provider);
-                    //    }
+                //case Dialect.Oracle:
+                //    return Init(Config.OracleDb, OracleDialect.Provider);
+                case Dialect.VistaDb:
+                    VistaDbDialect.Provider.UseLibraryFromGac = true;
+                    var connectionString = ConfigurationManager.ConnectionStrings["myVDBConnection"];
+                    var factory = DbProviderFactories.GetFactory(connectionString.ProviderName);
+                    using (var db = factory.CreateConnection())
+                    using (var cmd = db.CreateCommand())
+                    {
+                        var tmpFile = Path.GetTempPath().CombineWith(Guid.NewGuid().ToString("n") + ".vb5");
+                        cmd.CommandText = @"CREATE DATABASE '|DataDirectory|{0}', PAGE SIZE 4, LCID 1033, CASE SENSITIVE FALSE;"
+                            .Fmt(tmpFile);
+                        cmd.ExecuteNonQuery();
+                        return Init("Data Source={0};".Fmt(tmpFile), VistaDbDialect.Provider);
+                    }
             }
 
             throw new ArgumentException();
@@ -327,7 +330,12 @@ namespace TestOrmLite
     {
         static void Main(string[] args)
         {
-            new IntegrationTest(Dialect.Sqlite).Can_insert_update_and_select_AllTypes();
+            "ActivatedLicenseFeatures: {0}".Print(LicenseUtils.ActivatedLicenseFeatures());
+
+            Console.ReadLine();
+
+
+            //new IntegrationTest(Dialect.Sqlite).Can_insert_update_and_select_AllTypes();
 
             Console.ReadLine();
         }
